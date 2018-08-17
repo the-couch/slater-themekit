@@ -1,0 +1,22 @@
+{
+  "name": "@slater/themekit",
+  "version": "0.0.1",
+  "description": "A subset of @shopify/themekit API written in JavaScript.",
+  "main": "index.js",
+  "scripts": {
+    "publish": "npm publish --access public"
+  },
+  "keywords": [
+    "shopify",
+    "themekit"
+  ],
+  "author": "estrattonbailey",
+  "license": "MIT",
+  "dependencies": {
+    "ansi-colors": "^3.0.0",
+    "fs-extra": "^7.0.0",
+    "node-fetch": "^2.2.0",
+    "yaml": "^1.0.0-rc.7",
+    "zip-folder": "^1.0.0"
+  }
+}
