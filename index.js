@@ -1,26 +1,10 @@
 const assert = require('assert')
 const path = require('path')
 const fs = require('fs-extra')
-const c = require('ansi-colors')
 const zip = require('zip-folder')
 const fetch = require('node-fetch')
 
-const log = {
-  info (...args) {
-    console.info(
-      c.gray(`@slater/themekit`),
-      c.blue(args.unshift()),
-      ...args
-    )
-  },
-  error (...args) {
-    console.error(
-      c.gray(`@slater/themekit`),
-      c.red(args.unshift()),
-      ...args
-    )
-  }
-}
+const { log, sanitizeKey } = require('./lib/util.js')
 
 module.exports = function init (config = {}) {
   const {
@@ -58,24 +42,32 @@ module.exports = function init (config = {}) {
       })
     },
     upload (key, path) {
+      key = sanitizeKey(key)
+
+      if (!key) return Promise.resolve(true)
+
       const value = fs.readFileSync(dir(path), 'utf8')
 
       return api('PUT', {
         asset: { key, value }
       })
-        .then(res => res.json())
+        .then(res => res ? res.json() : {})
         .catch(e => {
-          log.error('upload failed', e)
+          log.error(`upload failed for ${key}`, e.message)
           return e
         })
     },
     remove (key) {
+      key = sanitizeKey(key)
+
+      if (!key) return Promise.resolve(true)
+
       return api('DELETE', {
         asset: { key }
       })
-        .then(res => res.json())
+        .then(res => res ? res.json() : {})
         .catch(e => {
-          log.error('remove failed', e)
+          log.error(`remove failed for ${key}`, e.message)
           return e
         })
     }
