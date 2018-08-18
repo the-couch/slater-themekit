@@ -52,6 +52,9 @@ module.exports = function init (config = {}) {
         asset: { key, value }
       })
         .then(res => res ? res.json() : {})
+        .then(() => {
+          log.info(`uploaded ${key} successfully`)
+        })
         .catch(e => {
           log.error(`upload failed for ${key}`, e.message)
           return e
@@ -66,6 +69,9 @@ module.exports = function init (config = {}) {
         asset: { key }
       })
         .then(res => res ? res.json() : {})
+        .then(() => {
+          log.info(`removed ${key} successfully`)
+        })
         .catch(e => {
           log.error(`remove failed for ${key}`, e.message)
           return e
