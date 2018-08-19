@@ -40,7 +40,7 @@ module.exports = function init (config = {}) {
     timer = setTimeout(() => {
       close()
       open = false
-      log.info(`upload server closed`)
+      // log.info(`upload server closed`)
     }, 2000)
   }
 
@@ -62,7 +62,7 @@ module.exports = function init (config = {}) {
       return createServer(cwd).then(({ url, close }) => {
         const src = url + file.replace(cwd, '') // get relative path
 
-        !open && log.info(`upload server opened`)
+        // !open && log.info(`upload server opened`)
 
         open = true
 
@@ -94,7 +94,11 @@ module.exports = function init (config = {}) {
         asset: { key }
       })
         .then(res => res ? res.json() : {})
-        .then(() => {
+        .then(({ errors, asset }) => {
+          if (errors) {
+            throw errors
+          }
+
           log.info(`removed ${key} successfully`)
         })
         .catch(e => {
