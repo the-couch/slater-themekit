@@ -8,6 +8,7 @@ const createServer = require('./lib/createServer.js')
 const { log, sanitizeKey } = require('./lib/util.js')
 
 module.exports = function init (config = {}) {
+  let open = false
   let timer
 
   const {
@@ -38,6 +39,7 @@ module.exports = function init (config = {}) {
     timer && clearTimeout(timer)
     timer = setTimeout(() => {
       close()
+      open = false
       log.info(`upload server closed`)
     }, 2000)
   }
@@ -52,29 +54,33 @@ module.exports = function init (config = {}) {
         if (e) log.error(`bootstrap failed`, e)
       })
     },
-    upload (key, path) {
+    upload (key, file) {
       key = sanitizeKey(key)
 
       if (!key) return Promise.resolve(true)
 
-      timer = Date.now()
-
       return createServer(cwd).then(({ url, close }) => {
-        const src = url + path
+        const src = url + file.replace(cwd, '') // get relative path
 
-        log.info(`upload server opened`)
+        !open && log.info(`upload server opened`)
+
+        open = true
 
         return api('PUT', {
           asset: { key, src }
         })
           .then(res => res ? res.json() : {})
-          .then(res => {
+          .then(({ errors, asset }) => {
+            if (errors) {
+              throw errors
+            }
+
             log.info(`uploaded ${key} successfully`)
             onIdle(close)
           })
           .catch(e => {
             onIdle(close)
-            log.error(`upload failed for ${key}`, e.message)
+            log.error(`upload failed for ${key}`, e.message || e)
             return e
           })
       })
