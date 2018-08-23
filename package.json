@@ -13,7 +13,7 @@
   "author": "estrattonbailey",
   "license": "MIT",
   "dependencies": {
-    "ansi-colors": "^3.0.3",
+    "ansi-colors": "^3.0.4",
     "fs-extra": "^7.0.0",
     "get-port": "^4.0.0",
     "http-debug": "^0.1.2",

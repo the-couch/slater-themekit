@@ -8,7 +8,6 @@ const createServer = require('./lib/createServer.js')
 const { log, sanitizeKey } = require('./lib/util.js')
 
 module.exports = function init (config = {}) {
-  let open = false
   let timer
 
   const {
@@ -37,11 +36,7 @@ module.exports = function init (config = {}) {
 
   function onIdle (close) {
     timer && clearTimeout(timer)
-    timer = setTimeout(() => {
-      close()
-      open = false
-      // log.info(`upload server closed`)
-    }, 2000)
+    timer = setTimeout(() => close(), 5000)
   }
 
   return {
@@ -61,10 +56,6 @@ module.exports = function init (config = {}) {
 
       return createServer(cwd).then(({ url, close }) => {
         const src = url + file.replace(cwd, '') // get relative path
-
-        // !open && log.info(`upload server opened`)
-
-        open = true
 
         return api('PUT', {
           asset: { key, src }
