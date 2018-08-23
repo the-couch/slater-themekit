@@ -50,7 +50,7 @@ module.exports = function init (config = {}) {
         if (e) log.error(`bootstrap failed`, e)
       })
     },
-    replace () {
+    deploy () {
       return new Promise((res, rej) => {
         readdir(cwd, [ '*.yml' ], (err, files) => {
           const paths = files.map(file => ([ file.replace(cwd, ''), file ]))

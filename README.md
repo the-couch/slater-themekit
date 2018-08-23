@@ -2,25 +2,31 @@
 A subset of [@Shopify/themekit](https://github.com/Shopify/themekit) API written in JavaScript.
 
 ## Usage
-Create an instance:
+All methods return `Promise`s.
+
+First, create an instance:
 ```javascript
 const themekit = require('@slater/themekit')
 
 const theme = themekit({
   password: 'abcde12345',
   store: 'slater-demo.myshopify.com',
-  theme_id: 123456789
+  theme_id: 123456789,
+  cwd: process.cwd()
 })
 ```
 ### upload
-Returns a `Promise`.
-```
+```javascript
 theme.upload('templates/index.liquid', './path/to/file.liquid')
 ```
 ### remove
-Returns a `Promise`.
-```
+```javascript
 theme.remove('templates/index.liquid')
+```
+### deploy
+Replace all remote theme files with local versions.
+```javascript
+theme.deploy()
 ```
 
 ## License
