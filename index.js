@@ -1,8 +1,10 @@
 const assert = require('assert')
 const path = require('path')
 const fs = require('fs-extra')
+const c = require('ansi-colors')
 const zip = require('zip-folder')
 const fetch = require('node-fetch')
+const wait = require('w2t')
 const readdir = require('recursive-readdir')
 
 const createServer = require('./lib/createServer.js')
@@ -47,26 +49,29 @@ module.exports = function init (config = {}) {
       fs.ensureDir(dir('temp'))
 
       zip(dir(opts.src), dir('temp/theme.zip'), e => {
-        if (e) log.error(`bootstrap failed`, e)
+        if (e) log(c.red(`bootstrap failed`), e)
       })
     },
-    deploy () {
+    deploy (theme) {
+      const _ = this
+
       return new Promise((res, rej) => {
-        readdir(cwd, [ '*.yml' ], (err, files) => {
-          const paths = files.map(file => ([ file.replace(cwd, ''), file ]))
-          const queue = []
+        readdir(path.join(cwd, dir(theme)), [ '*.yml', '.DS_Store' ], (err, files) => {
+          const paths = files.map(file => ([
+            file.split(theme || cwd)[1],
+            file
+          ]))
 
-          const interval = setInterval(() => {
-            if (paths.length) {
-              queue.push(this.upload(...paths.pop()))
-            } else {
-              clearInterval(interval)
-
-              Promise.all(queue)
-                .then(res)
-                .catch(rej)
-            }
-          }, 500)
+          ;(function push (p) {
+            wait(500, [
+              _.upload(...p)
+            ])
+              .then(() => {
+                if (paths.length) return push(paths.pop())
+                res()
+              })
+              .catch(rej)
+          })(paths.pop())
         })
       })
     },
@@ -87,12 +92,12 @@ module.exports = function init (config = {}) {
               throw errors
             }
 
-            log.info(`uploaded ${key} successfully`)
+            log(c.blue(`uploaded ${key} successfully`))
             onIdle(close)
           })
           .catch(e => {
             onIdle(close)
-            log.error(`upload failed for ${key}`, e.message || e)
+            log(c.red(`upload failed for ${key}`), e.message || e)
             return e
           })
       })
@@ -111,10 +116,10 @@ module.exports = function init (config = {}) {
             throw errors
           }
 
-          log.info(`removed ${key} successfully`)
+          log(c.blue(`removed ${key} successfully`))
         })
         .catch(e => {
-          log.error(`remove failed for ${key}`, e.message)
+          log(c.red(`remove failed for ${key}`), e.message)
           return e
         })
     }
