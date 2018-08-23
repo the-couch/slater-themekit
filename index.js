@@ -3,8 +3,9 @@ const path = require('path')
 const fs = require('fs-extra')
 const zip = require('zip-folder')
 const fetch = require('node-fetch')
-const createServer = require('./lib/createServer.js')
+const readdir = require('recursive-readdir')
 
+const createServer = require('./lib/createServer.js')
 const { log, sanitizeKey } = require('./lib/util.js')
 
 module.exports = function init (config = {}) {
@@ -47,6 +48,26 @@ module.exports = function init (config = {}) {
 
       zip(dir(opts.src), dir('temp/theme.zip'), e => {
         if (e) log.error(`bootstrap failed`, e)
+      })
+    },
+    replace () {
+      return new Promise((res, rej) => {
+        readdir(cwd, [ '*.yml' ], (err, files) => {
+          const paths = files.map(file => ([ file.replace(cwd, ''), file ]))
+          const queue = []
+
+          const interval = setInterval(() => {
+            if (paths.length) {
+              queue.push(this.upload(...paths.pop()))
+            } else {
+              clearInterval(interval)
+
+              Promise.all(queue)
+                .then(res)
+                .catch(rej)
+            }
+          }, 500)
+        })
       })
     },
     upload (key, file) {
