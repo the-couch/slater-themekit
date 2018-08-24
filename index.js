@@ -12,6 +12,7 @@ const { log, sanitizeKey } = require('./lib/util.js')
 
 module.exports = function init (config = {}) {
   let timer
+  let uploadingPaths = []
 
   const {
     password,
@@ -42,73 +43,56 @@ module.exports = function init (config = {}) {
     timer = setTimeout(() => close(), 5000)
   }
 
-  return {
-    bootstrap (opts = {}) {
-      assert(typeof opts, 'object', `Expected opts to be an object`)
+  function push () {
+    return new Promise((res, rej) => {
+      ;(function _push (p) {
+        wait(500, [
+          upload(...p)
+        ])
+          .then(() => {
+            if (uploadingPaths.length) return _push(uploadingPaths.pop())
+            res()
+          })
+          .catch(rej)
+      })(uploadingPaths.pop())
+    })
+  }
 
-      fs.ensureDir(dir('temp'))
+  function bootstrap (opts = {}) {
+    assert(typeof opts, 'object', `Expected opts to be an object`)
 
-      zip(dir(opts.src), dir('temp/theme.zip'), e => {
-        if (e) log(c.red(`bootstrap failed`), e)
-      })
-    },
-    deploy (theme) {
-      const _ = this
+    fs.ensureDir(dir('temp'))
 
-      return new Promise((res, rej) => {
-        readdir(path.join(cwd, dir(theme)), [ '*.yml', '.DS_Store' ], (err, files) => {
-          const paths = files.map(file => ([
+    zip(dir(opts.src), dir('temp/theme.zip'), e => {
+      if (e) log(c.red(`bootstrap failed`), e)
+    })
+  }
+
+  function deploy (theme) {
+    return new Promise((res, rej) => {
+      readdir(path.join(cwd, dir(theme)), [ '*.yml', '.DS_Store' ], (err, files) => {
+        uploadingPaths.concat(
+          files.map(file => ([
             file.split(theme || cwd)[1],
             file
           ]))
+        )
 
-          ;(function push (p) {
-            wait(500, [
-              _.upload(...p)
-            ])
-              .then(() => {
-                if (paths.length) return push(paths.pop())
-                res()
-              })
-              .catch(rej)
-          })(paths.pop())
-        })
+        push().then(res).catch(rej)
       })
-    },
-    upload (key, file) {
-      key = sanitizeKey(key)
+    })
+  }
 
-      if (!key) return Promise.resolve(true)
+  function upload (key, file) {
+    key = sanitizeKey(key)
 
-      return createServer(cwd).then(({ url, close }) => {
-        const src = url + file.replace(cwd, '') // get relative path
+    if (!key) return Promise.resolve(true)
 
-        return api('PUT', {
-          asset: { key, src }
-        })
-          .then(res => res ? res.json() : {})
-          .then(({ errors, asset }) => {
-            if (errors) {
-              throw errors
-            }
+    return createServer(cwd).then(({ url, close }) => {
+      const src = url + file.replace(cwd, '') // get relative path
 
-            log(c.blue(`uploaded ${key} successfully`))
-            onIdle(close)
-          })
-          .catch(e => {
-            onIdle(close)
-            log(c.red(`upload failed for ${key}`), e.message || e)
-            return e
-          })
-      })
-    },
-    remove (key) {
-      key = sanitizeKey(key)
-
-      if (!key) return Promise.resolve(true)
-
-      return api('DELETE', {
-        asset: { key }
+      return api('PUT', {
+        asset: { key, src }
       })
         .then(res => res ? res.json() : {})
         .then(({ errors, asset }) => {
@@ -116,12 +100,42 @@ module.exports = function init (config = {}) {
             throw errors
           }
 
-          log(c.blue(`removed ${key} successfully`))
+          log(c.blue(`uploaded ${key} successfully`))
+          !uploadingPaths.length && onIdle(close)
         })
         .catch(e => {
-          log(c.red(`remove failed for ${key}`), e.message)
+          !uploadingPaths.length && onIdle(close)
+          log(c.red(`upload failed for ${key}`), e.message || e)
           return e
         })
-    }
+    })
+  }
+
+  function remove (key) {
+    key = sanitizeKey(key)
+
+    if (!key) return Promise.resolve(true)
+
+    return api('DELETE', {
+      asset: { key }
+    })
+      .then(res => res ? res.json() : {})
+      .then(({ errors, asset }) => {
+        if (errors) {
+          throw errors
+        }
+
+        log(c.blue(`removed ${key} successfully`))
+      })
+      .catch(e => {
+        log(c.red(`remove failed for ${key}`), e.message)
+        return e
+      })
+  }
+
+  return {
+    deploy,
+    upload,
+    remove
   }
 }
