@@ -16,7 +16,7 @@
     "ansi-colors": "^3.0.4",
     "fs-extra": "^7.0.0",
     "get-port": "^4.0.0",
-    "localtunnel": "^1.9.0",
+    "ngrok": "^3.0.1",
     "node-fetch": "^2.2.0",
     "recursive-readdir": "^2.2.2",
     "serve-static": "^1.13.2",
