@@ -7,11 +7,15 @@ const fetch = require('node-fetch')
 const wait = require('w2t')
 const readdir = require('recursive-readdir')
 
-const createServer = require('./lib/createServer.js')
 const { log, sanitizeKey } = require('./lib/util.js')
 
 module.exports = function init (config = {}) {
   let timer
+
+  /**
+   * TODO
+   * does this still need to be global?
+   */
   let uploadingPaths = []
 
   const {
@@ -36,11 +40,6 @@ module.exports = function init (config = {}) {
       },
       body: JSON.stringify(body)
     })
-  }
-
-  function onIdle (close) {
-    timer && clearTimeout(timer)
-    timer = setTimeout(() => close(), 5000)
   }
 
   function push () {
@@ -71,7 +70,7 @@ module.exports = function init (config = {}) {
   function deploy (theme) {
     return new Promise((res, rej) => {
       readdir(path.join(cwd, dir(theme)), [ '*.yml', '.DS_Store' ], (err, files) => {
-        uploadingPaths.concat(
+        uploadingPaths = uploadingPaths.concat(
           files.map(file => ([
             file.split(theme || cwd)[1],
             file
@@ -88,27 +87,26 @@ module.exports = function init (config = {}) {
 
     if (!key) return Promise.resolve(true)
 
-    return createServer(cwd).then(({ url, close }) => {
-      const src = url + file.replace(cwd, '') // get relative path
+    const encoded = Buffer.from(fs.readFileSync(file), 'utf-8').toString('base64')
 
-      return api('PUT', {
-        asset: { key, src }
-      })
-        .then(res => res ? res.json() : {})
-        .then(({ errors, asset }) => {
-          if (errors) {
-            throw errors
-          }
-
-          log(c.blue(`uploaded ${key} successfully`))
-          !uploadingPaths.length && onIdle(close)
-        })
-        .catch(e => {
-          !uploadingPaths.length && onIdle(close)
-          log(c.red(`upload failed for ${key}`), e.message || e)
-          return e
-        })
+    return api('PUT', {
+      asset: {
+        key,
+        attachment: encoded
+      }
     })
+      .then(res => res ? res.json() : {})
+      .then(({ errors, asset }) => {
+        if (errors) {
+          throw errors
+        }
+
+        log(c.blue(`uploaded ${key} successfully`))
+      })
+      .catch(e => {
+        log(c.red(`upload failed for ${key}`), e.message || e)
+        return e
+      })
   }
 
   function remove (key) {
