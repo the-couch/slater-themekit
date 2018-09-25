@@ -159,7 +159,7 @@ module.exports = function init (config = {}) {
 
   function log (...args) {
     !quiet && console.log(
-      c.gray(`@slater/themekit v${pkg.version}\n`),
+      c.gray(`@slater/themekit v${pkg.version}`),
       ...args
     )
   }
