@@ -8,7 +8,7 @@ const wait = require('w2t')
 const readdir = require('recursive-readdir')
 const { any: match } = require('micromatch')
 
-const { log, sanitizeKey } = require('./lib/util.js')
+const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json')))
 
 module.exports = function init (config = {}) {
   let timer
@@ -24,7 +24,8 @@ module.exports = function init (config = {}) {
     theme_id,
     store,
     ignore_files = [],
-    cwd = process.cwd()
+    cwd = process.cwd(),
+    quiet
   } = config
 
   function dir (p) {
@@ -40,21 +41,6 @@ module.exports = function init (config = {}) {
         'Accept': 'application/json'
       },
       body: JSON.stringify(body)
-    })
-  }
-
-  function push () {
-    return new Promise((res, rej) => {
-      ;(function _push (p) {
-        wait(500, [
-          upload(...p)
-        ])
-          .then(() => {
-            if (uploadingPaths.length) return _push(uploadingPaths.pop())
-            res()
-          })
-          .catch(rej)
-      })(uploadingPaths.pop())
     })
   }
 
@@ -78,7 +64,16 @@ module.exports = function init (config = {}) {
           ]))
         )
 
-        push().then(res).catch(rej)
+        ;(function push (p) {
+          wait(500, [
+            upload(...p)
+          ])
+            .then(() => {
+              if (uploadingPaths.length) return push(uploadingPaths.pop())
+              res()
+            })
+            .catch(rej)
+        })(uploadingPaths.pop())
       })
     })
   }
@@ -89,7 +84,7 @@ module.exports = function init (config = {}) {
     if (!key) return Promise.resolve(true)
 
     if (match(path.basename(key), ignore_files)) {
-      log(c.gray('ignoring'), key)
+      log(c.gray('ignored'), key)
       return Promise.resolve(true)
     }
 
@@ -108,10 +103,17 @@ module.exports = function init (config = {}) {
         }
 
         log(c.blue(`uploaded ${key} successfully`))
+
+        return {
+          key,
+          errors
+        }
       })
       .catch(e => {
         log(c.red(`upload failed for ${key}`), e.message || e)
-        return e
+        return {
+          errors: e
+        }
       })
   }
 
@@ -130,11 +132,36 @@ module.exports = function init (config = {}) {
         }
 
         log(c.blue(`removed ${key} successfully`))
+
+        return {
+          key,
+          errors
+        }
       })
       .catch(e => {
         log(c.red(`remove failed for ${key}`), e.message)
-        return e
+        return {
+          errors: e
+        }
       })
+  }
+
+  function sanitizeKey (key) {
+    key = key.replace(/^\//, '')
+
+    if (!/^(layout|templates|sections|snippets|config|locales|assets)/.test(key)) {
+      log(c.red(`the key provided (${key}) is not supported by Shopify`))
+      return null
+    }
+
+    return key
+  }
+
+  function log (...args) {
+    !quiet && console.log(
+      c.gray(`@slater/themekit v${pkg.version}\n`),
+      ...args
+    )
   }
 
   return {

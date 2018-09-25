@@ -15,6 +15,7 @@
   "dependencies": {
     "ansi-colors": "^3.0.4",
     "fs-extra": "^7.0.0",
+    "log-update": "^2.3.0",
     "micromatch": "^3.1.10",
     "node-fetch": "^2.2.0",
     "recursive-readdir": "^2.2.2",
