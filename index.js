@@ -8,7 +8,7 @@ const wait = require('w2t')
 const readdir = require('recursive-readdir')
 const { any: match } = require('micromatch')
 
-const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json')))
+const pkg = require('./package.json')
 
 module.exports = function init (config = {}) {
   let timer
@@ -27,6 +27,8 @@ module.exports = function init (config = {}) {
     cwd = process.cwd(),
     quiet
   } = config
+
+  log(c.gray(`v${pkg.version}`))
 
   function dir (p) {
     return path.resolve(cwd, p)
@@ -159,7 +161,7 @@ module.exports = function init (config = {}) {
 
   function log (...args) {
     !quiet && console.log(
-      c.gray(`@slater/themekit v${pkg.version}`),
+      c.gray(`@slater/themekit`),
       ...args
     )
   }
