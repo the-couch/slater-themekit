@@ -6,6 +6,7 @@ const zip = require('zip-folder')
 const fetch = require('node-fetch')
 const wait = require('w2t')
 const readdir = require('recursive-readdir')
+const { any: match } = require('micromatch')
 
 const { log, sanitizeKey } = require('./lib/util.js')
 
@@ -22,7 +23,7 @@ module.exports = function init (config = {}) {
     password,
     theme_id,
     store,
-    ignore_files,
+    ignore_files = [],
     cwd = process.cwd()
   } = config
 
@@ -86,6 +87,11 @@ module.exports = function init (config = {}) {
     key = sanitizeKey(key)
 
     if (!key) return Promise.resolve(true)
+
+    if (match(path.basename(key), ignore_files)) {
+      log(c.gray('ignoring'), key)
+      return Promise.resolve(true)
+    }
 
     const encoded = Buffer.from(fs.readFileSync(file), 'utf-8').toString('base64')
 
