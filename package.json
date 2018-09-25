@@ -1,6 +1,6 @@
 {
   "name": "@slater/themekit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A subset of @shopify/themekit API written in JavaScript.",
   "main": "index.js",
   "scripts": {
