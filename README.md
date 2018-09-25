@@ -12,7 +12,10 @@ const theme = themekit({
   password: 'abcde12345',
   store: 'slater-demo.myshopify.com',
   theme_id: 123456789,
-  cwd: process.cwd()
+  cwd: process.cwd(),
+  ignore_files: [
+    'settings_data.json'
+  ]
 })
 ```
 ### upload
